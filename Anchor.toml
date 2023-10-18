@@ -2,6 +2,8 @@
 seeds = false
 skip-lint = false
 
+[programs.devnet]
+staking_contract = "9amNgcg3UHf5udr3gJ4xJpgqUqx3BF1i9vB5Np8xTH2i"
 
 [registry]
 url = "https://api.apr.dev"

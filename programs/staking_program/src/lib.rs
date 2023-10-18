@@ -15,6 +15,8 @@ pub enum Errors {
     StakingNotStarted,
     #[msg("Current staked amount zero")]
     ZeroStaked,
+    #[msg("Admin is not allowed to stake")]
+    AdminCannotStake,
 }
 
 
@@ -60,6 +62,7 @@ pub mod staking_contract {
 
         let clock = Clock::get()?; 
         let state_account: &Account<State> = &ctx.accounts.state;
+        require!(ctx.accounts.user.key()!=state_account.admin, Errors::AdminCannotStake);
         require!((clock.unix_timestamp as u64)>state_account.start_time, Errors::StakingNotStarted);
         require!((clock.unix_timestamp as u64)<state_account.end_time, Errors::StakingExpired);
 
@@ -253,7 +256,8 @@ pub struct Initialize <'info>{
         payer = user,
         space = 8 + UserInfo::LEN,
         seeds=[
-            b"ptest"
+            b"ptest",
+            user.key().as_ref()
         ],
         bump,
     )]
@@ -289,7 +293,8 @@ pub struct Unstake<'info> {
     pub staking_token: Account<'info, Mint>,
     #[account(mut,
         seeds=[
-            b"ptest"
+            b"ptest",
+            user.key().as_ref()
         ],
         bump,
     )]
@@ -324,7 +329,8 @@ pub struct GetRewards<'info> {
     pub staking_token: Account<'info, Mint>,
     #[account(mut,
         seeds=[
-            b"ptest"
+            b"ptest",
+            user.key().as_ref()
             ],
         bump,
     )]
