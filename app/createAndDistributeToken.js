@@ -1,11 +1,8 @@
 const solana = require("@solana/web3.js");
 const splToken = require("@solana/spl-token");
-
 (async () => {
-
     // connection to cluster
     const connection = new solana.Connection(solana.clusterApiUrl("devnet"), "confirmed");
-
     // generating a fresh Keypair for the admin
     let admin = solana.Keypair.generate();
     console.log("admin secretKey ", admin.secretKey, " admin publicKey ", admin.publicKey);
@@ -26,7 +23,6 @@ const splToken = require("@solana/spl-token");
     console.log("user4 secretKey ", user4.secretKey, " user4 publicKey ", user4.publicKey);
     let user5 = solana.Keypair.generate();
     console.log("user2 secretKey ", user5.secretKey, " user5 publicKey ", user5.publicKey);
-
     // creating a fresh token
     let mintPubkey = await splToken.createMint(
         connection, // conneciton
@@ -36,7 +32,6 @@ const splToken = require("@solana/spl-token");
         8 // decimals
     );
     console.log(`mintPubKey: ${mintPubkey.toBase58()}`);
-
     // creating an asociated token account for the admin to hold the token we just created
     let adminAta = await splToken.createAssociatedTokenAccount(
         connection, // connection
@@ -44,21 +39,18 @@ const splToken = require("@solana/spl-token");
         mintPubkey, // mint
         admin.publicKey // owner,
     );
-
     let amount = 500000000 * solana.LAMPORTS_PER_SOL;
-
     // minting 500Million fresh tokens into the account of the admin
     let txhashMintToAdmin = await splToken.mintToChecked(
         connection, // connection
         admin, // fee payer
         mintPubkey, // mint
         adminAta, // receiver associated token account
-        admin, // mint authority
+        admin.publicKey, // mint authority
         amount, // amount. 
         8 // decimals
     );
     console.log("Mint ", amount, " tokens to admin's ATA: ", txhashMintToAdmin);
-
     // creating an asociated token account for the user1 to hold the token we just created
     let user1Ata = await splToken.createAssociatedTokenAccount(
         connection, // connection
@@ -66,9 +58,7 @@ const splToken = require("@solana/spl-token");
         mintPubkey, // mint
         user1.publicKey // owner,
     );
-
     amount = 100000000 * solana.LAMPORTS_PER_SOL;
-
     // minting 100Million fresh tokens into the account of the user1
     let txhashMintToUser1 = await splToken.mintToChecked(
         connection, // connection
@@ -80,7 +70,6 @@ const splToken = require("@solana/spl-token");
         8 // decimals
     );
     console.log("Mint ", amount, " tokens to user1 ATA: ", txhashMintToUser1);
-
     // creating an asociated token account for the user2 to hold the token we just created
     let user2Ata = await splToken.createAssociatedTokenAccount(
         connection, // connection
@@ -88,9 +77,7 @@ const splToken = require("@solana/spl-token");
         mintPubkey, // mint
         user2.publicKey // owner,
     );
-
     amount = 100000000 * solana.LAMPORTS_PER_SOL;
-
     // minting 100Million fresh tokens into the account of the user2
     let txhashMintToUser2 = await splToken.mintToChecked(
         connection, // connection
@@ -102,7 +89,6 @@ const splToken = require("@solana/spl-token");
         8 // decimals
     );
     console.log("Mint ", amount, " tokens to user2 ATA: ", txhashMintToUser2);
-
     // creating an asociated token account for the user3 to hold the token we just created
     let user3Ata = await splToken.createAssociatedTokenAccount(
         connection, // connection
@@ -110,9 +96,7 @@ const splToken = require("@solana/spl-token");
         mintPubkey, // mint
         user3.publicKey // owner,
     );
-
     amount = 100000000 * solana.LAMPORTS_PER_SOL;
-    
     // minting 100Million fresh tokens into the account of the user3
     let txhashMintToUser3 = await splToken.mintToChecked(
         connection, // connection
@@ -124,7 +108,6 @@ const splToken = require("@solana/spl-token");
         8 // decimals
     );
     console.log("Mint ", amount, " tokens to user3 ATA: ", txhashMintToUser3);
-
     // creating an asociated token account for the user4 to hold the token we just created
     let user4Ata = await splToken.createAssociatedTokenAccount(
         connection, // connection
@@ -134,7 +117,6 @@ const splToken = require("@solana/spl-token");
     );
 
     amount = 100000000 * solana.LAMPORTS_PER_SOL;
-
     // minting 100Million fresh tokens into the account of the user4
     let txhashMintToUser4 = await splToken.mintToChecked(
         connection, // connection
@@ -146,7 +128,6 @@ const splToken = require("@solana/spl-token");
         8 // decimals
     );
     console.log("Mint ", amount, " tokens to user4 ATA: ", txhashMintToUser4);
-
     // creating an asociated token account for the user5 to hold the token we just created
     let user5Ata = await splToken.createAssociatedTokenAccount(
         connection, // connection
@@ -154,9 +135,7 @@ const splToken = require("@solana/spl-token");
         mintPubkey, // mint
         user5.publicKey // owner,
     );
-
     amount = 100000000 * solana.LAMPORTS_PER_SOL;
-
     // minting 100Million fresh tokens into the account of the user5
     let txhashMintToUser5 = await splToken.mintToChecked(
         connection, // connection
@@ -168,7 +147,6 @@ const splToken = require("@solana/spl-token");
         8 // decimals
     );
     console.log("Mint ", amount, " tokens to user5 ATA: ", txhashMintToUser5);
-
     // setting the mint authority of the token to 'null' so that no new tokens can be minted 
     let freezeMintSignature = await splToken.setAuthority(
         connection, // connection
@@ -179,9 +157,7 @@ const splToken = require("@solana/spl-token");
         null, // this sets the mint authority to null so nobody can mint
     );
     console.log("freeze mint signature: ", freezeMintSignature);
-
     // geeting mint account information to display the current supply of the token
     let mintAccount = await splToken.getMint(connection, mintPubkey);
     console.log("Total supply of the token", mintAccount.supply);
-
 })();

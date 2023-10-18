@@ -5,12 +5,15 @@ skip-lint = false
 [programs.devnet]
 staking_contract = "9amNgcg3UHf5udr3gJ4xJpgqUqx3BF1i9vB5Np8xTH2i"
 
+[programs.localnet]
+staking_contract = "9amNgcg3UHf5udr3gJ4xJpgqUqx3BF1i9vB5Np8xTH2i"
+
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "/home/ant/.config/solana/id.json"
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+test = "npx mocha ./tests"
