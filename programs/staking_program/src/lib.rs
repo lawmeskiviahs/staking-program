@@ -34,7 +34,6 @@ pub mod staking_contract {
 
         let amount: u64 = 100000000*100000000;
 
-        // let binding = ctx.accounts.staking_token.key();
         let bump_vector = state_bump.to_le_bytes();
         let inner = vec![
             b"ltest".as_ref(),
@@ -76,11 +75,9 @@ pub mod staking_contract {
             stake_info_pda.total_reward+=rewards;
         }
 
-        // let binding = ctx.accounts.staking_token.key();
         let bump_vector = state_bump.to_le_bytes();
         let inner = vec![
             b"ltest".as_ref(),
-            // &binding.as_ref(),
             bump_vector.as_ref(),
         ];
         let outer = vec![inner.as_slice()];
@@ -122,11 +119,9 @@ pub mod staking_contract {
         let rewards =  time_passed * interest;
         stake_info_pda.total_reward+=rewards;
 
-        // let binding = ctx.accounts.staking_token.key();
         let bump_vector = state_bump.to_le_bytes();
         let inner = vec![
             b"ltest".as_ref(),
-            // &binding.as_ref(),
             bump_vector.as_ref(),
         ];
         let outer = vec![inner.as_slice()];
@@ -181,11 +176,9 @@ pub mod staking_contract {
         anchor_spl::token::transfer(cpi_ctx, stake_info_pda.amount)?;
         }
         
-        // let binding = ctx.accounts.staking_token.key();
         let bump_vector = state_bump.to_le_bytes();
         let inner = vec![
             b"ltest".as_ref(),
-            // &binding.as_ref(),
             bump_vector.as_ref(),
         ];
         let outer = vec![inner.as_slice()];
