@@ -21,6 +21,10 @@ cd staking-program/
 ```bash
 npm install
 ```
+### Test the contract:
+```bash
+anchor test
+```
 ### Building the contract
 ```bash
 anchor build
