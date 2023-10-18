@@ -1,11 +1,11 @@
 const anchor = require("@project-serum/anchor");
 const web3 = require("@solana/web3.js");
 const spl = require("@solana/spl-token");
-const { admin } = require("./keypairs");
+const { adminRaw, programIdRaw, mintIdRaw, stateSeed, escrowSeed } = require("./constants");
 
 async function main() {
 
-  const programId = new anchor.web3.PublicKey("");
+  const programId = new anchor.web3.PublicKey(programIdRaw);
 
   const idl = JSON.parse(
     require("fs").readFileSync("../target/idl/staking_contract.json", "utf8")
@@ -13,7 +13,7 @@ async function main() {
 
   const admin_wallet = web3.Keypair.fromSecretKey(
     Uint8Array.from(
-      admin
+      adminRaw
     ));
   const connection = new web3.Connection(web3.clusterApiUrl("devnet"), "confirmed");
   let wallet = new anchor.Wallet(admin_wallet);
@@ -25,7 +25,7 @@ async function main() {
     provider,
   );
 
-  const mint = new anchor.web3.PublicKey("");
+  const mint = new anchor.web3.PublicKey(mintIdRaw);
 
   const adminTokenAccount = spl.getAssociatedTokenAddressSync(
     mint,
@@ -34,17 +34,15 @@ async function main() {
 
   const [statePubkey, stateBump] = anchor.web3.PublicKey.findProgramAddressSync(
     [
-      Buffer.from("ltest"),
+      Buffer.from(stateSeed),
     ],
     programId,
   );
-
-  console.log(statePubkey);
-
+  
   const [escrowPubkey, escrowBump] = anchor.
     web3.PublicKey.findProgramAddressSync(
       [
-        Buffer.from("testh"),
+        Buffer.from(escrowSeed),
       ],
       programId,
     );
