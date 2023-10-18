@@ -1,6 +1,6 @@
 const anchor = require("@project-serum/anchor");
 const spl = require("@solana/spl-token");
-const { stateSeed, escrowSeed, stakingInfoPdaSeed } = require("../app/constants");
+const { stateSeedTest, escrowSeedTest, stakingInfoPdaSeedTest } = require("../app/constants");
 const asset = require("chai");
 describe("staking_program", async () => {
     const Decimal = 100000000;
@@ -11,6 +11,7 @@ describe("staking_program", async () => {
     const idl = await JSON.parse(
         require("fs").readFileSync("target/idl/staking_contract.json", "utf8")
     );
+    // console.log(idl);
     let program = new anchor.Program(
         idl,
         programId,
@@ -65,7 +66,7 @@ describe("staking_program", async () => {
         mint.publicKey, // mint
         admin.publicKey // owner,
     );
-    console.log("before amount", adminAta);
+    console.log("before amount", adminAta.toBase58());
     try {
         var amount = 500000000 * Decimal;
     } catch (e) {
@@ -73,7 +74,6 @@ describe("staking_program", async () => {
     }
     console.log("after ata");
     try {
-
         var txhashMintToAdmin = await spl.mintToChecked(
             provider.connection, // connection
             admin, // fee payer
@@ -84,7 +84,6 @@ describe("staking_program", async () => {
             8 // decimals
         );
         console.log(txhashMintToAdmin, ">>>>>>>>>>>>>>");
-
     } catch (e) {
         console.log(e, ">>>>>>>>>>>>>>");
     }
@@ -127,7 +126,7 @@ describe("staking_program", async () => {
         amount, // amount.
         8 // decimals
     );
-    console.log("Mint.publicKey ", amount, " tokens to user2 ATA: ", txhashMintToUser2);
+    console.log("Mint ", amount, " tokens to user2 ATA: ", txhashMintToUser2);
     // creating an asociated token account for the user3 to hold the token we just created
     let user3Ata = await spl.createAssociatedTokenAccount(
         provider.connection, // connection
@@ -146,7 +145,7 @@ describe("staking_program", async () => {
         amount, // amount.
         8 // decimals
     );
-    console.log("Mint.publicKey ", amount, " tokens to user3 ATA: ", txhashMintToUser3);
+    console.log("Mint ", amount, " tokens to user3 ATA: ", txhashMintToUser3);
     // creating an asociated token account for the user4 to hold the token we just created
     let user4Ata = await spl.createAssociatedTokenAccount(
         provider.connection, // connection
@@ -165,7 +164,7 @@ describe("staking_program", async () => {
         amount, // amount. if your decimals is 8, you mint.publicKey 10^8 for 1 token.
         8 // decimals
     );
-    console.log("Mint.publicKey ", amount, " tokens to user4 ATA: ", txhashMintToUser4);
+    console.log("Mint ", amount, " tokens to user4 ATA: ", txhashMintToUser4);
     // creating an asociated token account for the user5 to hold the token we just created
     let user5Ata = await spl.createAssociatedTokenAccount(
         provider.connection, // connection
@@ -184,37 +183,31 @@ describe("staking_program", async () => {
         amount, // amount.
         8 // decimals
     );
-    console.log("Mint.publicKey ", amount, " tokens to user5 ATA: ", txhashMintToUser5);
+    console.log("Mint ", amount, " tokens to user5 ATA: ", txhashMintToUser5);
     console.log("log after keygen");
     // find associated token account for admin
     const adminTokenAccount = spl.getAssociatedTokenAddressSync(
         mint.publicKey,
         admin.publicKey,
     );
-    console.log("after ata");
+    console.log("after ata", adminTokenAccount.toBase58());
     // find address for state PDA account
     const [statePubkey, stateBump] = anchor.web3.PublicKey.findProgramAddressSync(
         [
-            Buffer.from(stateSeed),
+            Buffer.from(stateSeedTest),
         ],
         programId,
     );
-    console.log("after state pda");
+    console.log("after state pda", statePubkey.toBase58());
     // find address for escrow PDA account
     const [escrowPubkey, escrowBump] = anchor.web3.PublicKey.findProgramAddressSync(
         [
-            Buffer.from(escrowSeed),
+            Buffer.from(escrowSeedTest),
         ],
         programId,
     );
-    console.log("log after accounts getting");
-    // const [stakingInfoPda, stakingInfoBump] = web3.PublicKey.findProgramAddressSync(
-    //   [
-    //     Buffer.from(stakingInfoPdaSeed),
-    //     userWallet.publicKey.toBuffer(),
-    //   ],
-    //   program.programId,
-    // );
+    console.log("log after accounts getting", escrowPubkey.toBase58());
+
     it("Is initialized!", async () => {
         // Add your test here.
         console.log("in it 1");
@@ -234,7 +227,218 @@ describe("staking_program", async () => {
         }).signers([admin]).rpc();
         console.log("tx hash", txs);
         expect(200).equal(200);
-        // const stateInfo = await provider.connection.getAccountInfo(statePubkey);
-        // assert(stateInfo)
     });
+    it("Cannot initialise again", async () => {
+        console.log("in it 1");
+        const slot = await provider.connection.getSlot();
+        const timestamp = await provider.connection.getBlockTime(slot);
+        let startTime = new anchor.BN(timestamp + 10);
+        let endTime = new anchor.BN(timestamp + 320);
+        console.log("in it 2");
+        const txs = await program.methods.initialize(startTime, endTime, stateBump).accounts({
+            admin: admin.publicKey,
+            state: statePubkey,
+            stakingToken: mint.publicKey,
+            adminTokenAccount: adminTokenAccount,
+            escrowWallet: escrowPubkey,
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+        }).signers([admin]).rpc();
+        console.log("tx hash", txs);
+        expect(200).equal(200);
+    });
+    it("Cannot unstake without staking first", async () => {
+        const [stakingInfoPda, stakingInfoBump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from(stakingInfoPdaSeedTest),
+                user1.publicKey.toBuffer(),
+            ],
+            programId,
+        );
+        const tx = await program.methods.unstake(stateBump, stakingInfoBump, escrowBump).accounts({
+            user: user1.publicKey,
+            state: statePubkey,
+            stakingToken: mint.publicKey,
+            stakingInfoAccount: stakingInfoPda,
+            escrowWallet: escrowPubkey,
+            toTokenAccount: user1Ata,
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          }).signers([userWallet]).rpc();
+          console.log("tx hash", tx);
+    });
+    it("Cannot get rewards without staking first", async () => {
+        const [stakingInfoPda, stakingInfoBump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from(stakingInfoPdaSeedTest),
+                user1.publicKey.toBuffer(),
+            ],
+            programId,
+        );
+        const tx = await program.methods.getRewards(stateBump, stakingInfoBump, escrowBump).accounts({
+            user: user1.publicKey,
+            state: statePubkey,
+            stakingToken: mint.publicKey,
+            toTokenAccount: user1Ata,
+            stakingInfoAccount: stakingInfoPda,
+            escrowWallet: escrowPubkey,
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          }).signers([user1]).rpc();
+          console.log("tx hash", tx);
+    });
+    it("Cannot stake before start time", async () => {
+        // immidiately after initializing
+        const [stakingInfoPda, stakingInfoBump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from(stakingInfoPdaSeedTest),
+                user1.publicKey.toBuffer(),
+            ],
+            programId,
+        );
+        let amount = new anchor.BN(300);
+        const tx = await program.methods.stake(amount, stateBump, escrowBump).accounts({
+            user: user1.publicKey,
+            state: statePubkey,
+            stakingToken: mint.publicKey,
+            fromTokenAccount: user1Ata,
+            stakingInfoAccount: stakingInfoPda,
+            escrowWallet: escrowPubkey,
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+        }).signers([user1]).rpc();
+        console.log("tx hash", tx);
+        expect(200).equal(200);
+    });
+    it("Is staking", async () => {
+        // after waiting for 10 seconds for the staking period to pass
+        const [stakingInfoPda, stakingInfoBump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from(stakingInfoPdaSeedTest),
+                user1.publicKey.toBuffer(),
+            ],
+            programId,
+        );
+        let amount = new anchor.BN(300);
+        const tx = await program.methods.stake(amount, stateBump, escrowBump).accounts({
+            user: user1.publicKey,
+            state: statePubkey,
+            stakingToken: mint.publicKey,
+            fromTokenAccount: user1Ata,
+            stakingInfoAccount: stakingInfoPda,
+            escrowWallet: escrowPubkey,
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+        }).signers([user1]).rpc();
+        console.log("tx hash", tx);
+        expect(200).equal(200);
+    });
+    it("Admin cannot stake", async () => {
+        // after waiting for 10 seconds for the staking period to pass
+        const [stakingInfoPda, stakingInfoBump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from(stakingInfoPdaSeedTest),
+                admin.publicKey.toBuffer(),
+            ],
+            programId,
+        );
+        let amount = new anchor.BN(300);
+        const tx = await program.methods.stake(amount, stateBump, escrowBump).accounts({
+            user: admin.publicKey,
+            state: statePubkey,
+            stakingToken: mint.publicKey,
+            fromTokenAccount: adminAta,
+            stakingInfoAccount: stakingInfoPda,
+            escrowWallet: escrowPubkey,
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+        }).signers([admin]).rpc();
+        console.log("tx hash", tx);
+        expect(200).equal(200);
+    });
+    it("Cannot unstake while in bonding period", async () => {
+        // without waiting for the 5 minutes bonding period
+        const [stakingInfoPda, stakingInfoBump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from(stakingInfoPdaSeedTest),
+                user1.publicKey.toBuffer(),
+            ],
+            programId,
+        );
+        const tx = await program.methods.unstake(stateBump, stakingInfoBump, escrowBump).accounts({
+            user: user1.publicKey,
+            state: statePubkey,
+            stakingToken: mint.publicKey,
+            stakingInfoAccount: stakingInfoPda,
+            escrowWallet: escrowPubkey,
+            toTokenAccount: user1Ata,
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          }).signers([userWallet]).rpc();
+          console.log("tx hash", tx);
+    });
+    it("Is unstaking", async () => {
+        // after waiting for 5 minutes 
+        const [stakingInfoPda, stakingInfoBump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from(stakingInfoPdaSeedTest),
+                user1.publicKey.toBuffer(),
+            ],
+            programId,
+        );
+        const tx = await program.methods.unstake(stateBump, stakingInfoBump, escrowBump).accounts({
+            user: user1.publicKey,
+            state: statePubkey,
+            stakingToken: mint.publicKey,
+            stakingInfoAccount: stakingInfoPda,
+            escrowWallet: escrowPubkey,
+            toTokenAccount: user1Ata,
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          }).signers([userWallet]).rpc();
+          console.log("tx hash", tx);
+    });
+    it("Cannot get rewards while staking period is active", async () => {
+        // call within the staking period
+        const [stakingInfoPda, stakingInfoBump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from(stakingInfoPdaSeedTest),
+                user1.publicKey.toBuffer(),
+            ],
+            programId,
+        );
+        const tx = await program.methods.getRewards(stateBump, stakingInfoBump, escrowBump).accounts({
+            user: user1.publicKey,
+            state: statePubkey,
+            stakingToken: mint.publicKey,
+            toTokenAccount: user1Ata,
+            stakingInfoAccount: stakingInfoPda,
+            escrowWallet: escrowPubkey,
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          }).signers([user1]).rpc();
+          console.log("tx hash", tx);
+    });
+    it("Is getting rewards", async () => {
+        // call after the staking period expires
+        const [stakingInfoPda, stakingInfoBump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from(stakingInfoPdaSeedTest),
+                user1.publicKey.toBuffer(),
+            ],
+            programId,
+        );
+        const tx = await program.methods.getRewards(stateBump, stakingInfoBump, escrowBump).accounts({
+            user: user1.publicKey,
+            state: statePubkey,
+            stakingToken: mint.publicKey,
+            toTokenAccount: user1Ata,
+            stakingInfoAccount: stakingInfoPda,
+            escrowWallet: escrowPubkey,
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          }).signers([user1]).rpc();
+          console.log("tx hash", tx);
+    });
+
 });
